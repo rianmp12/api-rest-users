@@ -1,0 +1,606 @@
+{
+	"info": {
+		"_postman_id": "175b1209-b499-4a7a-a3a7-c48737b1824a",
+		"name": "Users API - Tests (Pagination)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "45707258"
+	},
+	"item": [
+		{
+			"name": "List Users - default",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const json = pm.response.json();",
+							"pm.test(\"Estrutura básica\", () => {",
+							"  pm.expect(json).to.have.property(\"data\").that.is.an(\"array\");",
+							"  pm.expect(json).to.have.property(\"pagination\").that.is.an(\"object\");",
+							"});",
+							"pm.test(\"Pagina 1, tamanho 10\", () => {",
+							"  pm.expect(json.pagination.page).to.eql(1);",
+							"  pm.expect(json.pagination.page_size).to.eql(10);",
+							"  pm.expect(json.data.length).to.be.at.most(10);",
+							"});",
+							"pm.test(\"Campos dos itens\", () => {",
+							"  if (json.data.length) {",
+							"    const u = json.data[0];",
+							"    [\"id\",\"name\",\"email\",\"role\",\"is_active\",\"created_at\"].forEach(k => pm.expect(u).to.have.property(k));",
+							"  }",
+							"});",
+							"if (json.data.length) {",
+							"  pm.collectionVariables.set(\"userId\", json.data[0].id);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?page=1&page_size=10",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Users - page 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const j = pm.response.json();",
+							"pm.test(\"Página 2\", () => pm.expect(j.pagination.page).to.eql(2));",
+							"pm.test(\"has_prev true\", () => pm.expect(j.pagination.has_prev).to.eql(true));",
+							"pm.test(\"<= page_size\", () => pm.expect(j.data.length).to.be.at.most(10));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?page=2&page_size=10",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "2"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Users - page_size=50",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const j = pm.response.json();",
+							"pm.test(\"page_size=50 e <=50 itens\", () => {",
+							"  pm.expect(j.pagination.page_size).to.eql(50);",
+							"  pm.expect(j.data.length).to.be.at.most(50);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?page=1&page_size=50",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "page_size",
+							"value": "50"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Users - invalid page_size>50",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"422 Validation Error (page_size > 50)\", () => pm.response.to.have.status(422));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?page=1&page_size=51",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "page_size",
+							"value": "51"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search q=ana",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const j = pm.response.json();",
+							"pm.test(\"Busca q=ana consistente\", () => {",
+							"  const q = \"ana\";",
+							"  j.data.forEach(u => {",
+							"    const ok = (u.name || \"\").toLowerCase().includes(q) || (u.email || \"\").toLowerCase().includes(q);",
+							"    pm.expect(ok, `Falhou para id=${u.id}`).to.eql(true);",
+							"  });",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?q=ana",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "ana"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Filter role=manager",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const j = pm.response.json();",
+							"pm.test(\"Todos com role=manager\", () => {",
+							"  j.data.forEach(u => pm.expect(String(u.role).toLowerCase()).to.eql(\"manager\"));",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?role=manager",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "role",
+							"value": "manager"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Filter is_active=true",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const j = pm.response.json();",
+							"pm.test(\"Todos com is_active=true\", () => {",
+							"  j.data.forEach(u => pm.expect(Boolean(u.is_active)).to.eql(true));",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?is_active=true",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "is_active",
+							"value": "true"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sort name asc",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const j = pm.response.json();",
+							"pm.test(\"Ordenado por name ASC\", () => {",
+							"  const names = j.data.map(u => (u.name || \"\").toLowerCase());",
+							"  const sorted = [...names].sort((a,b) => a.localeCompare(b, \"pt-BR\"));",
+							"  pm.expect(names).to.eql(sorted);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?sort=name",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "sort",
+							"value": "name"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sort created_at desc",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const j = pm.response.json();",
+							"pm.test(\"created_at DESC\", () => {",
+							"  const arr = j.data.map(u => new Date(u.created_at).getTime());",
+							"  const sortedDesc = [...arr].sort((a,b) => b - a);",
+							"  pm.expect(arr).to.eql(sortedDesc);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?sort=-created_at",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "sort",
+							"value": "-created_at"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sort -role,name",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const j = pm.response.json();",
+							"function cmp(a,b){",
+							"  const ra = String(a.role).toLowerCase();",
+							"  const rb = String(b.role).toLowerCase();",
+							"  if (ra < rb) return 1;",
+							"  if (ra > rb) return -1;",
+							"  const na = String(a.name).toLowerCase();",
+							"  const nb = String(b.name).toLowerCase();",
+							"  return na.localeCompare(nb, \"pt-BR\");",
+							"}",
+							"const expected = [...j.data].sort(cmp);",
+							"pm.test(\"Ordenação -role,name\", () => pm.expect(j.data).to.eql(expected));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?sort=-role,name",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "sort",
+							"value": "-role,name"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Empty page 999",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const j = pm.response.json();",
+							"pm.test(\"Sem itens na página vazia\", () => pm.expect(j.data.length).to.eql(0));",
+							"pm.test(\"has_next=false\", () => pm.expect(j.pagination.has_next).to.eql(false));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?page=999&page_size=10",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "999"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get by id (from collection var)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+							"const u = pm.response.json();",
+							"[\"id\",\"name\",\"email\",\"role\",\"is_active\",\"created_at\"].forEach(k => pm.expect(u).to.have.property(k));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{baseUrl}}/users/{{userId}}"
+			},
+			"response": []
+		},
+		{
+			"name": "Get by id - 404",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"404 Not Found\", () => pm.response.to.have.status(404));",
+							"const body = pm.response.json();",
+							"pm.test(\"Tem detail\", () => pm.expect(body).to.have.property(\"detail\"));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{baseUrl}}/users/999999"
+			},
+			"response": []
+		},
+		{
+			"name": "Validation page=0",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"422 page >= 1\", () => pm.response.to.have.status(422));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?page=0&page_size=10",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Validation page_size=0",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"422 page_size >= 1\", () => pm.response.to.have.status(422));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/users?page=1&page_size=0",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "page_size",
+							"value": "0"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": ""
+		}
+	]
+}
