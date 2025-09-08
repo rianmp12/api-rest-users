@@ -10,7 +10,6 @@ async def catch_all_exceptions(request: Request, call_next):
         return JSONResponse(
             status_code=500,
             content={
-                "success": False,
                 "data": None,
                 "pagination": None,
                 "error": {

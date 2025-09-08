@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import List, Optional
 
-class UserDTO(BaseModel):
+class UserResponse(BaseModel):
     id: int
     name: str
     email: str
@@ -17,8 +17,6 @@ class Pagination(BaseModel):
     has_next: bool
     has_prev: bool
 
-class Envelope(BaseModel):
-    success: bool
-    data: Optional[Any] = None
-    pagination: Optional[Pagination] = None
-    error: Optional[dict] = None
+class UsersListResponse(BaseModel):
+    data: List[UserResponse]
+    pagination: Pagination
